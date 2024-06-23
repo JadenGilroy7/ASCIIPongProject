@@ -144,10 +144,32 @@ void drawHorizontalBorders(wchar_t* screen)
 }
 void handlePaddleOneMovement(wchar_t* screen, const bool bKey[4])
 {
+    // Move up
+    if (bKey[0] && paddle1YPos > 1)
+    {
+        paddle1YPos--;
+    }
+
+    // Move down
+    if (bKey[1] && paddle1YPos < SCREEN_HEIGHT - PADDLE_HEIGHT - 1)
+    {
+        paddle1YPos++;
+    }
 }
 
 void handlePaddleTwoMovement(wchar_t* screen, const bool bKey[4])
 {
+    // Move up
+    if (bKey[2] && paddle2YPos > 1)
+    {
+        paddle2YPos--;
+    }
+
+    // Move down
+    if (bKey[3] && paddle2YPos < SCREEN_HEIGHT - PADDLE_HEIGHT - 1)
+    {
+        paddle2YPos++;
+    }
 }
 
 void drawPaddleOne(wchar_t* screen)
@@ -160,6 +182,10 @@ void drawPaddleOne(wchar_t* screen)
 
 void drawPaddleTwo(wchar_t* screen)
 {
+    for (size_t index = 0; index < PADDLE_HEIGHT; index++)
+    {
+        screen[(paddle2YPos + index) * SCREEN_WIDTH + paddle2XPos] = L'<';
+    }
 }
 
 void repositionBallVertically(unsigned int& ballYPos, int& ballYSpeed)
