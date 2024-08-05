@@ -23,7 +23,7 @@ const unsigned int WINNER_X_POSITION = SCREEN_WIDTH / 4;
 const unsigned int WINNER_Y_POSITION = SCREEN_HEIGHT / 2;
 const unsigned int FINAL_GAMEOVER_PAUSE = 5000; //milliseconds
 
-const unsigned int BALL_SPEED = 5;
+const unsigned int BALL_SPEED = 15; // Delay between movement ticks
 
 const unsigned int PADDLE_DISTANCE_FROM_SIDE_BORDERS = 2;
 const unsigned int PADDLE_HEIGHT = 8;
@@ -141,6 +141,18 @@ void drawVerticalBars(wchar_t* screen)
 
 void drawHorizontalBorders(wchar_t* screen)
 {
+    // Draw top border
+    for (int i = 0; i < SCREEN_WIDTH; i++)
+    {
+        screen[i] = L'-';
+    }
+
+    //Draw bottom borde
+    for (int i = (SCREEN_HEIGHT - 1) * SCREEN_WIDTH; i < SCREEN_HEIGHT * SCREEN_WIDTH; i++)
+    {
+        screen[i] = L'-';
+    }
+
 }
 void handlePaddleOneMovement(wchar_t* screen, const bool bKey[4])
 {
@@ -210,20 +222,74 @@ void repositionBallVertically(unsigned int& ballYPos, int& ballYSpeed)
 
 void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballXPos, int& ballXSpeed)
 {
+    if (ballXSpeed > 0) // ball going right
+    {
+        if (ballXPos >= paddle2XPos - 1)
+        {
+            if (ballYPos >= paddle2YPos && ballYPos < paddle2YPos + PADDLE_HEIGHT)
+            {
+                ballXSpeed *= -1;
+            }
+            else if (ballXPos >= SCREEN_WIDTH - 1)
+            {
+                ballXPos = SCREEN_WIDTH / 2;
+                ballXSpeed *= -1;
+                player1Score++;
+            }
+        }
+        ballXPos += ballXSpeed;
+    }
+    else if (ballXSpeed < 0) // ball going left
+    {
+        if (ballXPos <= paddle1XPos + 1)
+        {
+            if (ballYPos >= paddle1YPos && ballYPos < paddle1YPos + PADDLE_HEIGHT)
+            {
+                ballXSpeed *= -1;
+            }
+            else if (ballXPos <= 0)
+            {
+                ballXPos = SCREEN_WIDTH / 2;
+                ballXSpeed *= -1;
+                player2Score++;
+            }
+        }
+        ballXPos += ballXSpeed;
+    }
 }
 
 void printPlayerScores(wchar_t* screen)
 {
+    screen[SCORE_X_POSITION + SCORE_Y_POSITION * SCREEN_WIDTH] = L'0' + player1Score;
+    screen[(SCREEN_WIDTH - SCORE_X_POSITION - 1) + SCORE_Y_POSITION * SCREEN_WIDTH] = L'0' + player2Score;
 }
 
 void checkWinningConditions(wchar_t* screen, bool& bGameOver)
 {
+    if (player1Score >= WINNING_SCORE)
+    {
+        printPlayerOneWon(screen, L"Player 1 Wins!", 14);
+        bGameOver = true;
+    }
+    else if (player2Score >= WINNING_SCORE)
+    {
+        printPlayerTwoWon(screen, L"Player 2 Wins!", 14);
+        bGameOver = true;
+    }
 }
 
 void printPlayerOneWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength)
 {
+    for (unsigned int i = 0; i < textLength; i++)
+    {
+        screen[WINNER_X_POSITION + i + WINNER_Y_POSITION * SCREEN_WIDTH] = text[i];
+    }
 }
 
 void printPlayerTwoWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength)
 {
+    for (unsigned int i = 0; i < textLength; i++)
+    {
+        screen[(SCREEN_WIDTH - WINNER_X_POSITION - textLength + i) + WINNER_Y_POSITION * SCREEN_WIDTH] = text[i];
+    }
 }
