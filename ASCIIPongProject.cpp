@@ -93,7 +93,7 @@ int main()
         repositionBallVertically(ballYPos, ballYSpeed);
 
         // Reposition Ball horizontally
-        repositionBallHorizontally(ballYPos, ballXPos, ballXSpeed);
+        repositionBallHorizontally(ballYPos, ballXPos, ballXSpeed, ballYSpeed);
 
         // Draw Player 1 and Player 2 Scores
         printPlayerScores(screen);
@@ -220,7 +220,7 @@ void repositionBallVertically(unsigned int& ballYPos, int& ballYSpeed)
     }
 }
 
-void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballXPos, int& ballXSpeed)
+void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballXPos, int& ballXSpeed, int& ballYSpeed)
 {
     if (ballXSpeed > 0) // ball going right
     {
@@ -229,11 +229,21 @@ void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballX
             if (ballYPos >= paddle2YPos && ballYPos < paddle2YPos + PADDLE_HEIGHT)
             {
                 ballXSpeed *= -1;
+
+                // Adjust vertical speed based on where the ball hits the paddle
+                int hitPosition = ballYPos - paddle2YPos;
+                if (hitPosition < PADDLE_HEIGHT / 3)
+                    ballYSpeed = -1;
+                else if (hitPosition < 2 * PADDLE_HEIGHT / 3)
+                    ballYSpeed = 0;
+                else
+                    ballYSpeed = 1;
             }
             else if (ballXPos >= SCREEN_WIDTH - 1)
             {
                 ballXPos = SCREEN_WIDTH / 2;
-                ballXSpeed *= -1;
+                ballXSpeed = -1; // Reset speed when scoring
+                ballYSpeed = 1;
                 player1Score++;
             }
         }
@@ -246,11 +256,21 @@ void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballX
             if (ballYPos >= paddle1YPos && ballYPos < paddle1YPos + PADDLE_HEIGHT)
             {
                 ballXSpeed *= -1;
+
+                // Adjust vertical speed based on where the ball hits the paddle
+                int hitPosition = ballYPos - paddle1YPos;
+                if (hitPosition < PADDLE_HEIGHT / 3)
+                    ballYSpeed = -1;
+                else if (hitPosition < 2 * PADDLE_HEIGHT / 3)
+                    ballYSpeed = 0;
+                else
+                    ballYSpeed = 1;
             }
             else if (ballXPos <= 0)
             {
                 ballXPos = SCREEN_WIDTH / 2;
-                ballXSpeed *= -1;
+                ballXSpeed = 1; // Reset speed when scoring
+                ballYSpeed = 1;
                 player2Score++;
             }
         }
