@@ -11,5 +11,5 @@ void repositionBallVertically(unsigned int& ballYPos, int& ballYSpeed);
 void repositionBallHorizontally(const unsigned int ballYPos, unsigned int& ballXPos, int& ballXSpeed, int& ballYSpeed);
 void printPlayerScores(wchar_t* screen);
 void checkWinningConditions(wchar_t* screen, bool& bGameOver);
-void printPlayerOneWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength);
-void printPlayerTwoWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength);
+void printPlayerWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength);
+void resetGame(unsigned int& ballXPos, unsigned int& ballYPos, int& ballXSpeed, int& ballYSpeed);

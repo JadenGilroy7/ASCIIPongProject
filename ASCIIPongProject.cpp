@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include "ASCIIPongProject.h"
+#include <conio.h>
 
 const int SCREEN_WIDTH = 120;    // Console Screen Size X (columns)
 const int SCREEN_HEIGHT = 30;    // Console Screen Size Y (rows)
@@ -19,7 +20,7 @@ unsigned int player1Score = 0;
 unsigned int player2Score = 0;
 
 //WINNER_X_POSITION is measured from the left border for player 1 and from the right border for player 2
-const unsigned int WINNER_X_POSITION = SCREEN_WIDTH / 4;
+const unsigned int WINNER_X_POSITION = SCREEN_WIDTH / 2;
 const unsigned int WINNER_Y_POSITION = SCREEN_HEIGHT / 2;
 const unsigned int FINAL_GAMEOVER_PAUSE = 5000; //milliseconds
 
@@ -38,10 +39,6 @@ unsigned int paddle2YPos = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
 
 int main()
 {
-    /*
-    * Initialize data structures.
-    */
-
     //Ball XY position
     unsigned int ballXPos = SCREEN_WIDTH / 2;
     unsigned int ballYPos = SCREEN_HEIGHT / 2;
@@ -56,60 +53,95 @@ int main()
 
     wchar_t* screen = new wchar_t[SCREEN_WIDTH * SCREEN_HEIGHT];
 
-    // Main Loop
-    bool bGameOver = false;
-    while (!bGameOver)
+    bool gamePlaying = true;
+
+    while (gamePlaying) // Game restart loop
     {
-        // Draw a blank field of size nScreenWidth * nScreenHeight
+        bool bGameOver = false;
+        resetGame(ballXPos, ballYPos, ballXSpeed, ballYSpeed);
+
+        // Main game loop
+        while (!bGameOver)
+        {
+            // Draw a blank field of size nScreenWidth * nScreenHeight
+            drawBlankField(screen);
+
+            //Draw left, center and right vertical borders
+            drawVerticalBars(screen);
+
+            //Draw horizontal lines at the top and bottom of the screen
+            drawHorizontalBorders(screen);
+
+            std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(BALL_SPEED)); // Small Step = 1 Game Tick
+
+            // Read user input (pressing W/S or O/K keys)
+            wchar_t controls[] = { L'W', L'S', L'O', L'K' };
+            bool bKey[sizeof(controls) / sizeof(wchar_t)];
+            for (int k = 0; k < sizeof(bKey) / sizeof(bool); k++)
+                bKey[k] = (0x8000 & GetAsyncKeyState((unsigned char)(controls[k]))) != 0;
+
+            // Handle paddle one movement
+            handlePaddleOneMovement(screen, bKey);
+
+            // Draw paddle one
+            drawPaddleOne(screen);
+
+            // Handle paddle two movement
+            handlePaddleTwoMovement(screen, bKey);
+
+            // Draw paddle two
+            drawPaddleTwo(screen);
+
+            // Reposition Ball vertically
+            repositionBallVertically(ballYPos, ballYSpeed);
+
+            // Reposition Ball horizontally
+            repositionBallHorizontally(ballYPos, ballXPos, ballXSpeed, ballYSpeed);
+
+            // Draw Player 1 and Player 2 Scores
+            printPlayerScores(screen);
+
+            //Draw ball
+            screen[ballXPos + ballYPos * SCREEN_WIDTH] = L'O';
+
+            checkWinningConditions(screen, bGameOver);
+
+            // Display Frame
+            WriteConsoleOutputCharacter(hConsole, screen, SCREEN_WIDTH * SCREEN_HEIGHT, { 0,0 }, &dwBytesWritten);
+        }
+
+        // Game over screen
         drawBlankField(screen);
+        if (player1Score >= WINNING_SCORE)
+        {
+            printPlayerWon(screen, L"Player 1 Wins!", 14);
+        }
+        else if (player2Score >= WINNING_SCORE)
+        {
+            printPlayerWon(screen, L"Player 2 Wins!", 14);
+        }
 
-        //Draw left, center and right vertical borders
-        drawVerticalBars(screen);
+        // Display "Press any key to restart" message
+        const wchar_t* restartMsg = L"Press any key to restart";
+        unsigned int msgLength = 24;
+        unsigned int msgXPosition = (SCREEN_WIDTH - msgLength) / 2;
+        unsigned int msgYPosition = SCREEN_HEIGHT / 2 + 2;
+        for (unsigned int i = 0; i < msgLength; i++)
+        {
+            screen[msgXPosition + i + msgYPosition * SCREEN_WIDTH] = restartMsg[i];
+        }
 
-        //Draw horizontal lines at the top and bottom of the screen
-        drawHorizontalBorders(screen);
-
-        std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(BALL_SPEED)); // Small Step = 1 Game Tick
-
-        // Read user input (pressing W/S or O/K keys)
-        wchar_t controls[] = { L'W', L'S', L'O', L'K' };
-        bool bKey[sizeof(controls) / sizeof(wchar_t)];
-        for (int k = 0; k < sizeof(bKey) / sizeof(bool); k++)
-            bKey[k] = (0x8000 & GetAsyncKeyState((unsigned char)(controls[k]))) != 0;
-
-        // Handle paddle one movement
-        handlePaddleOneMovement(screen, bKey);
-
-        // Draw paddle one
-        drawPaddleOne(screen);
-
-        // Handle paddle two movement
-        handlePaddleTwoMovement(screen, bKey);
-
-        // Draw paddle two
-        drawPaddleTwo(screen);
-
-        // Reposition Ball vertically
-        repositionBallVertically(ballYPos, ballYSpeed);
-
-        // Reposition Ball horizontally
-        repositionBallHorizontally(ballYPos, ballXPos, ballXSpeed, ballYSpeed);
-
-        // Draw Player 1 and Player 2 Scores
-        printPlayerScores(screen);
-
-        //Draw ball
-        screen[ballXPos + ballYPos * SCREEN_WIDTH] = L'O';
-
-        checkWinningConditions(screen, bGameOver);
-
-        // Display Frame
+        // Display final frame
         WriteConsoleOutputCharacter(hConsole, screen, SCREEN_WIDTH * SCREEN_HEIGHT, { 0,0 }, &dwBytesWritten);
+
+        // Wait for any key press
+        FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+        _getch();
     }
 
-    // Exiting
-    std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(FINAL_GAMEOVER_PAUSE));
+    // Cleanup
     CloseHandle(hConsole);
+    delete[] screen;
     return 0;
 }
 
@@ -288,28 +320,38 @@ void checkWinningConditions(wchar_t* screen, bool& bGameOver)
 {
     if (player1Score >= WINNING_SCORE)
     {
-        printPlayerOneWon(screen, L"Player 1 Wins!", 14);
+        //printPlayerOneWon(screen, L"Player 1 Wins!", 14);
         bGameOver = true;
     }
     else if (player2Score >= WINNING_SCORE)
     {
-        printPlayerTwoWon(screen, L"Player 2 Wins!", 14);
+        //printPlayerTwoWon(screen, L"Player 2 Wins!", 14);
         bGameOver = true;
     }
 }
 
-void printPlayerOneWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength)
+void printPlayerWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength)
 {
     for (unsigned int i = 0; i < textLength; i++)
     {
-        screen[WINNER_X_POSITION + i + WINNER_Y_POSITION * SCREEN_WIDTH] = text[i];
+        screen[(WINNER_X_POSITION + i + WINNER_Y_POSITION * SCREEN_WIDTH) - (textLength / 2)] = text[i];
     }
 }
 
-void printPlayerTwoWon(wchar_t* screen, const wchar_t* text, const unsigned int textLength)
+void resetGame(unsigned int& ballXPos, unsigned int& ballYPos, int& ballXSpeed, int& ballYSpeed)
 {
-    for (unsigned int i = 0; i < textLength; i++)
-    {
-        screen[(SCREEN_WIDTH - WINNER_X_POSITION - textLength + i) + WINNER_Y_POSITION * SCREEN_WIDTH] = text[i];
-    }
+    // Reset ball position
+    ballXPos = SCREEN_WIDTH / 2;
+    ballYPos = SCREEN_HEIGHT / 2;
+
+    // Reset ball speed
+    ballXSpeed = 1;
+    ballYSpeed = 1;
+
+    // Reset paddle positions
+    paddle1YPos = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
+    paddle2YPos = (SCREEN_HEIGHT - PADDLE_HEIGHT) / 2;
+    // Reset scores
+    player1Score = 0;
+    player2Score = 0;
 }
